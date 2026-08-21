@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LimbuAI — Meta App Review Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-2: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-dim: #6b7280;
+    --accent: #eab308;
+    --accent-soft: #facc15;
+    --accent-2: #3b82f6;
+    --accent-3: #ec4899;
+    --ok: #10b981;
+    --err: #ef4444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Inter', sans-serif; min-height:100vh; line-height:1.6;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+  h1,h2,h3,.display{font-family:'Montserrat', sans-serif;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:20px 32px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:rgba(250,250,250,0.92); backdrop-filter:blur(8px); z-index:10;
+  }
+  .brand{display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--text);}
+  .brand .mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display:flex; align-items:center; justify-content:center; font-weight:700; color:#111827;
+  }
+  .brand h1{font-size:17px; font-weight:700;}
+  .back{font-size:13px; color:var(--text-dim); text-decoration:none; padding:8px 14px; border:1px solid var(--border); border-radius:8px;}
+  .back:hover{background:var(--surface-2); color:var(--text);}
+
+  main{max-width:920px; margin:0 auto; padding:40px 32px 100px;}
+
+  .hero{margin-bottom:40px;}
+  .kicker{display:inline-block; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:#92400e; background:linear-gradient(135deg, rgba(250,204,21,.35), rgba(234,179,8,.25)); padding:5px 12px; border-radius:20px; margin-bottom:14px;}
+  .hero h1{font-size:32px; font-weight:800; letter-spacing:-0.02em; margin-bottom:12px;}
+  .hero p{font-size:15.5px; color:var(--text-dim); max-width:680px;}
+
+  .progress-rail{display:flex; gap:6px; margin:28px 0 44px;}
+  .progress-rail a{flex:1; text-decoration:none;}
+  .progress-rail .step{
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 12px;
+    font-size:12px; color:var(--text-dim); font-weight:600;
+  }
+  .progress-rail .step b{display:block; color:var(--text); font-size:13px; font-family:'Montserrat'; margin-bottom:2px;}
+  .progress-rail .step.done{border-color:var(--ok); }
+  .progress-rail .step.done b{color:#047857;}
+
+  section{margin-bottom:44px; scroll-margin-top:90px;}
+  .step-head{display:flex; align-items:center; gap:14px; margin-bottom:16px;}
+  .step-num{
+    width:36px; height:36px; border-radius:10px; flex:none;
+    background:linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-family:'Montserrat'; color:#111827;
+  }
+  .step-head h2{font-size:20px; font-weight:700;}
+  .step-head .tag{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em;}
+
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow:0 1px 2px rgba(17,24,39,.04);}
+  .panel + .panel{margin-top:14px;}
+  .panel h3{font-size:14.5px; font-weight:700; margin-bottom:10px;}
+  .panel p{font-size:14px; color:var(--text-dim); margin-bottom:8px;}
+  .panel ul, .panel ol{padding-left:20px; font-size:14px; color:var(--text); margin:8px 0;}
+  .panel li{margin-bottom:6px;}
+  .panel li strong{color:var(--text);}
+
+  code, .pill-code{
+    font-family:'JetBrains Mono', monospace; background:var(--surface-2); border:1px solid var(--border);
+    padding:2px 7px; border-radius:6px; font-size:12.5px;
+  }
+
+  .perm-grid{display:grid; grid-template-columns:1fr; gap:12px;}
+  .perm-card{background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px 18px;}
+  .perm-card .row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px;}
+  .perm-card .name{font-family:'JetBrains Mono'; font-size:13px; font-weight:700; color:#1d4ed8;}
+  .perm-card .status{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:20px;}
+  .status.need{background:rgba(239,68,68,.1); color:#b91c1c;}
+  .status.have{background:rgba(16,185,129,.12); color:#047857;}
+  .perm-card p{font-size:13px; color:var(--text-dim); margin:0;}
+  .perm-card .used-by{margin-top:8px; font-size:12px; color:var(--text-dim);}
+  .perm-card .used-by code{margin-right:4px;}
+
+  .checklist{display:flex; flex-direction:column; gap:8px;}
+  .checklist label{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; padding:10px 12px; border-radius:10px; background:var(--surface-2); cursor:pointer;}
+  .checklist input{margin-top:3px; accent-color:var(--accent-2);}
+  .checklist label:has(input:checked){background:rgba(16,185,129,.08);}
+
+  .dos-donts{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:680px){.dos-donts{grid-template-columns:1fr;}}
+  .dos, .donts{border-radius:14px; padding:18px 20px;}
+  .dos{background:rgba(16,185,129,.07); border:1px solid rgba(16,185,129,.25);}
+  .donts{background:rgba(239,68,68,.06); border:1px solid rgba(239,68,68,.2);}
+  .dos h3{color:#047857;} .donts h3{color:#b91c1c;}
+  .dos ul, .donts ul{padding-left:18px; font-size:13.5px;}
+  .dos li, .donts li{margin-bottom:6px;}
+
+  .script-flow{counter-reset:sc;}
+  .script-flow li{list-style:none; counter-increment:sc; position:relative; padding-left:34px; margin-bottom:14px; font-size:14px;}
+  .script-flow li::before{
+    content:counter(sc); position:absolute; left:0; top:0; width:22px; height:22px; border-radius:6px;
+    background:var(--surface-2); border:1px solid var(--border); font-family:'JetBrains Mono'; font-size:11px;
+    display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--text-dim);
+  }
+  .script-flow li b{display:block; margin-bottom:2px;}
+  .script-flow li span{color:var(--text-dim); font-size:13px;}
+
+  .warn-box{background:rgba(250,204,21,.12); border:1px solid rgba(234,179,8,.4); border-radius:12px; padding:14px 16px; font-size:13.5px; margin-top:14px;}
+  .warn-box b{color:#92400e;}
+
+  footer{max-width:920px; margin:0 auto; padding:0 32px 60px; color:var(--text-dim); font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="/">
+    <div class="mark">L</div>
+    <h1>LimbuAI Automation</h1>
+  </a>
+  <a class="back" href="/">← Dashboard</a>
+</header>
+
+<main>
+
+  <div class="hero">
+    <span class="kicker">Meta App Review · Step-by-step</span>
+    <h1>Instagram permission video kaise banani hai &amp; submit kaise karni hai</h1>
+    <p>Ye page tumhare LimbuAI Instagram Automation app ke liye poora process cover karta hai — kaunse permissions chahiye, har permission ke liye video me kya dikhana hai, video kaise record/upload karni hai, aur Meta ko submit kaise karna hai.</p>
+  </div>
+
+  <div class="progress-rail">
+    <a href="#permissions"><div class="step"><b>1. Permissions</b>Kaunse scopes chahiye</div></a>
+    <a href="#video"><div class="step"><b>2. Video banao</b>Screencast recording</div></a>
+    <a href="#upload"><div class="step"><b>3. Upload karo</b>App Review tab me</div></a>
+    <a href="#submit"><div class="step"><b>4. Submit karo</b>Review ke liye bhejo</div></a>
+  </div>
+
+  <section id="permissions">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div><h2>Kaunse Instagram API permissions chahiye</h2><div class="tag">Instagram API with Instagram Login (Business Login)</div></div>
+    </div>
+    <div class="panel">
+      <p>Yeh dashboard jo kaam karta hai (insights, comments manage, DM auto-reply), uske liye Meta ke 4 core scopes chahiye. Har ek ko App Review me alag se submit karna padta hai — apni <b>alag description</b> aur <b>apni alag screencast</b> ke saath (duplicate video/description allowed nahi hai).</p>
+      <div class="perm-grid" style="margin-top:14px;">
+        <div class="perm-card">
+          <div class="row"><span class="name">instagram_business_basic</span><span class="status have">Login ke sath hi milta hai</span></div>
+          <p>Profile info (username, account type, media count) aur media list read karne ke liye. Isko review ki zaroorat nahi hoti — sabse basic scope hai.</p>
+          <div class="used-by">Dashboard me use: <code>/api/profile</code> <code>/api/media</code></div>
+        </div>
+        <div class="perm-card">
+          <div class="row"><span class="name">instagram_business_manage_comments</span><span class="status need">Review chahiye</span></div>
+          <p>Comments read karna, reply karna, hide/delete karna — dono manual (dashboard se) aur automatic (webhook se).</p>
+          <div class="used-by">Dashboard me use: <code>/api/media/:id/comments</code> <code>/api/comments/:id/reply</code> <code>/api/comments/:id/hide</code></div>
+        </div>
+        <div class="perm-card">
+          <div class="row"><span class="name">instagram_business_manage_messages</span><span class="status need">Review chahiye</span></div>
+          <p>DMs bhejne/receive karne ke liye — DM auto-reply rules yahi permission use karte hain.</p>
+          <div class="used-by">Dashboard me use: <code>send_dm_reply()</code> · webhook <code>messaging</code> field</div>
+        </div>
+        <div class="perm-card">
+          <div class="row"><span class="name">instagram_business_manage_insights</span><span class="status need">Review chahiye</span></div>
+          <p>Post-level insights (reach, likes, comments, shares, saved) fetch karne ke liye jo har media card pe dikhte hain.</p>
+          <div class="used-by">Dashboard me use: <code>/api/media/:id/insights</code></div>
+        </div>
+      </div>
+      <div class="warn-box"><b>Note:</b> Purane scope names (<code>instagram_manage_comments</code>, <code>instagram_manage_messages</code> waghera bina <code>business_</code> prefix ke) deprecated ho chuke hain. App Dashboard me sirf naye <code>instagram_business_*</code> scopes select karna — agar purane dikhein to app ko naye Instagram API product pe migrate karna padega.</div>
+    </div>
+  </section>
+
+  <section id="video">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div><h2>Screencast video kaise banani hai</h2><div class="tag">Har permission ki alag video</div></div>
+    </div>
+
+    <div class="panel">
+      <h3>Recording setup</h3>
+      <ul>
+        <li><b>Resolution:</b> 1080p ya usse zyada. Screen/monitor resolution 1440px width se zyada mat rakhna (reviewer ka screen chhota ho sakta hai).</li>
+        <li><b>Audio:</b> Zaroorat nahi — reviewers audio nahi sunte. Video mute rakh sakte ho.</li>
+        <li><b>Language:</b> App UI English me rakhna jab record karo, taaki reviewer samajh sake.</li>
+        <li><b>Mouse:</b> Sirf mouse se navigate karo (keyboard shortcuts avoid karo) — mouse cursor thoda bada rakho taaki clicks clearly dikhein.</li>
+        <li><b>Frame:</b> Sirf app window record karo (poori desktop nahi) — full screen app rakho.</li>
+        <li><b>Tools (free):</b> Windows par <span class="mono">Win+Alt+R</span> (Xbox Game Bar) ya <b>OBS Studio</b> free hai. Paid: Camtasia, Snagit.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Har permission ki video me kya dikhana hai</h3>
+      <p>Meta ka rule simple hai: <b>(a)</b> user app ko permission grant karte hue dikhna chahiye, aur <b>(b)</b> app us permission ko real feature me use karte hue dikhna chahiye.</p>
+      <ol class="script-flow">
+        <li><b>Login / permission grant</b><span>Instagram Business Login screen dikhao jaha user "Allow" karta hai — jitne scopes maang rahe ho (comments, messages, insights) sab is ek screen pe dikhte hain, ye ek baar record kar lo aur har video ke start me use kar sakte ho.</span></li>
+        <li><b>comments permission → dashboard khol ke ek post click karo</b><span>Comments list dikhao → ek comment pe "Reply" click karke reply bhejo → phir "Hide" ya "Delete" bhi try karo. Ye <code>instagram_business_manage_comments</code> ki video hai.</span></li>
+        <li><b>messages permission → auto-reply rule dikhao</b><span>"Direct Messages" tab kholo → ek keyword rule add karo (jaise "price" → "DM us for pricing!") → phir kisi doosre test-account se us keyword wala DM bhejo aur dikhao ki auto-reply aa gaya (activity log me "auto_dm_reply" entry dikhao). Ye <code>instagram_business_manage_messages</code> ki video hai.</span></li>
+        <li><b>insights permission → post insights kholo</b><span>Media grid me se koi post click karo → modal me reach/likes/comments/shares/saved ke numbers dikhao. Ye <code>instagram_business_manage_insights</code> ki video hai.</span></li>
+      </ol>
+      <div class="warn-box"><b>Reminder:</b> Agar app khud-explanatory nahi hai to on-screen text captions/tooltips daal do jisme bata ho "ye button reply bhejta hai" waghera — reviewer ko context chahiye hota hai.</div>
+    </div>
+  </section>
+
+  <section id="upload">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div><h2>Video upload kaise karni hai</h2><div class="tag">developers.facebook.com/apps → App Review</div></div>
+    </div>
+    <div class="panel">
+      <ol class="script-flow">
+        <li><b>App Dashboard kholo</b><span><a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com/apps</a> → apna app select karo.</span></li>
+        <li><b>App Review → Permissions and Features</b><span>Left sidebar me "App Review" → "Permissions and Features" pe jao. Yaha upar bataye 3 scopes (comments, messages, insights) dhundo — <code>instagram_business_basic</code> auto-approved hota hai isliye list me alag se nahi maangna padta.</span></li>
+        <li><b>Har permission ke saamne "Request" click karo</b><span>Ek form khulega — "How is this used?" description likhna hoga (har permission ke liye alag, copy-paste mat karna) aur video upload karne ka option milega.</span></li>
+        <li><b>Video file upload karo</b><span>MP4 recommended. File size limit App Dashboard me hi dikh jayegi (usually kaafi bada limit hota hai, 1-2GB tak chal jata hai). Upload hone ke baad preview zaroor dekh lena.</span></li>
+        <li><b>Business Verification</b><span>Agar app dashboard "Business Verification required" bol raha hai to pehle Meta Business Manager me business verify karna padega — ye alag se ek process hai jisme business documents chahiye hote hain.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="submit">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div><h2>Submit karne se pehle final checklist</h2><div class="tag">Mistakes yahi hoti hain</div></div>
+    </div>
+
+    <div class="checklist panel">
+      <label><input type="checkbox"> Privacy Policy URL aur Terms of Service URL App Settings → Basic me daal diye</label>
+      <label><input type="checkbox"> App icon (1024×1024) aur category select kar di</label>
+      <label><input type="checkbox"> Data handling questionnaire fill kar diya (App Review tab me)</label>
+      <label><input type="checkbox"> Har permission ki description alag-alag likhi hai (kisi ko copy-paste nahi kiya)</label>
+      <label><input type="checkbox"> Har permission ki apni alag screencast video upload hai</label>
+      <label><input type="checkbox"> Video me login/permission-grant step aur actual feature use dono dikh rahe hain</label>
+      <label><input type="checkbox"> App UI English me hai video ke andar</label>
+      <label><input type="checkbox"> Test Instagram Business account ka access Meta reviewer ko diya hai (ya credentials/test data provide ki hai jahan zaroorat ho)</label>
+      <label><input type="checkbox"> Deployed URL live hai aur webhook working state me hai (reviewer khud bhi test kar sakta hai)</label>
+    </div>
+
+    <div class="dos-donts" style="margin-top:14px;">
+      <div class="dos">
+        <h3>✅ Karo</h3>
+        <ul>
+          <li>Ek clean test post/comment/DM pehle se ban lo taaki video me demo smooth chale</li>
+          <li>Har feature ka pura loop dikhao — click se result tak</li>
+          <li>Submit karne ke baad ~1 hafte wait karo, review team email pe reply karti hai agar kuch missing ho</li>
+        </ul>
+      </div>
+      <div class="donts">
+        <h3>❌ Mat karo</h3>
+        <ul>
+          <li>Ek hi video sab permissions ke liye reuse — har permission ki alag video chahiye</li>
+          <li>Keyboard shortcuts se navigate karna — sirf mouse clicks dikhao</li>
+          <li>Poori desktop record karna — sirf app window</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  LimbuAI Instagram Automation Dashboard — internal reference for Meta App Review submission. Sources: Meta App Review &amp; Instagram API with Instagram Login developer docs.
+</footer>
+
+</body>
+</html>
