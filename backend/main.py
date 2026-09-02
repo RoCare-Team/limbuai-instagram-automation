@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import hmac
 import hashlib
+import os
 
 from .config import VERIFY_TOKEN, APP_SECRET
 from . import instagram_client as ig
@@ -20,6 +21,11 @@ app.add_middleware(
 )
 
 init_db()
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------
@@ -251,4 +257,5 @@ async def receive_webhook(request: Request):
 # ---------------------------------------------------------------------------
 # Serve the dashboard frontend
 # ---------------------------------------------------------------------------
-app.mount("/", StaticFiles(directory="backend/static", html=True), name="static")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
