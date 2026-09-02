@@ -37,16 +37,28 @@ Localhost pe do cheezein nahi chalengi:
 
 ## 2. Live deploy karna (webhook ke liye zaroori)
 
-Free options: **Render.com**, **Railway.app**, ya **Fly.io**
+App ko koi bhi Python host chala sakta hai. Repo me `Procfile` aur `runtime.txt`
+already hain, to zyadatar platforms khud detect kar lenge.
 
-### Render.com pe (sabse aasan free option):
-1. Is project ko GitHub repo me push karo
-2. Render.com pe "New Web Service" banao, apna repo connect karo
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-5. Environment variables me `.env` wali values daalo — `IG_APP_ID`, `IG_APP_SECRET`, `VERIFY_TOKEN`, `APP_SECRET`, aur `PUBLIC_BASE_URL` (deploy ke baad mila URL)
-   (repo me `render.yaml` blueprint already hai, Render khud form bhar dega)
-6. Deploy hone ke baad tumhe ek URL milega jaise `https://limbuai-dashboard.onrender.com`
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- **Python version:** 3.11 (`runtime.txt` me set hai)
+
+Environment variables (host ke dashboard me daalne hain):
+
+| Variable | Kya daalna hai |
+|---|---|
+| `IG_APP_ID` | Meta App Dashboard se Instagram app ID |
+| `IG_APP_SECRET` | Meta App Dashboard se Instagram app secret |
+| `PUBLIC_BASE_URL` | Deploy hone ke baad mila URL, e.g. `https://dashboard.limbuai.com` |
+| `VERIFY_TOKEN` | Webhook verify token (jo Meta me bhi daaloge) |
+| `APP_SECRET` | Webhook signature verify karne ke liye |
+| `DB_PATH` | Writable path, e.g. `/tmp/ig_dashboard.db` |
+| `UPLOAD_DIR` | Writable path, e.g. `/tmp/uploads` |
+
+**Dhyan rakhna:** SQLite file aur uploads local disk pe hain. Agar host har deploy pe
+disk wipe karta hai to rules aur activity log reset ho jayenge — permanent chahiye to
+persistent disk lo ya database Postgres pe move karna padega.
 
 ## 3. Meta App me OAuth redirect URI add karo
 
@@ -89,7 +101,7 @@ ig-dashboard/
 │   └── static/
 │       ├── index.html            # dashboard UI
 │       └── app-review-guide.html # Meta App Review walkthrough
-├── render.yaml              # one-click Render deploy blueprint
+├── Procfile                 # start command for any Python host
 ├── requirements.txt
 ├── .env.example
 └── README.md
