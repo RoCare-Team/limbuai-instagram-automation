@@ -1,14 +1,19 @@
-from fastapi import FastAPI, Request, Query, HTTPException
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi import FastAPI, Request, Query, HTTPException, UploadFile, File
+from fastapi.responses import PlainTextResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import hmac
 import hashlib
 import os
+import time
+import uuid
 
-from .config import VERIFY_TOKEN, APP_SECRET
+from .config import VERIFY_TOKEN, APP_SECRET, UPLOAD_DIR, PUBLIC_BASE_URL, REQUIRED_SCOPES
 from . import instagram_client as ig
-from .db import init_db, get_conn, log_activity
+from . import oauth
+from .db import (
+    init_db, get_conn, log_activity, get_account, save_account, clear_account,
+)
 from .rules_engine import find_matching_reply
 
 app = FastAPI(title="LimbuAI Instagram Automation Dashboard")
@@ -189,6 +194,194 @@ def api_activity(limit: int = 50):
 
 
 # ---------------------------------------------------------------------------
+# Instagram Business Login (OAuth)
+# This is the flow Meta's App Review screencasts must open with.
+# ---------------------------------------------------------------------------
+
+def _redirect_uri(request: Request) -> str:
+    """Callback URL for this deployment - must match the App Dashboard entry."""
+    base = PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
+    return f"{base}/auth/callback"
+
+
+@app.get("/api/auth/status")
+def auth_status(request: Request):
+    account = get_account()
+    status = {
+        "connected": bool(account),
+        "app_configured": oauth.is_configured(),
+        "scopes": REQUIRED_SCOPES,
+        "redirect_uri": _redirect_uri(request),
+    }
+    if account:
+        status["ig_user_id"] = account.get("ig_user_id")
+        status["username"] = account.get("username")
+        status["source"] = account.get("source", "login")
+        expires_at = account.get("expires_at")
+        if expires_at:
+            status["expires_in_days"] = max(0, round((expires_at - time.time()) / 86400))
+    return status
+
+
+@app.get("/auth/login")
+def auth_login(request: Request):
+    """Send the user to Instagram's permission screen."""
+    try:
+        return RedirectResponse(oauth.build_authorize_url(_redirect_uri(request)))
+    except oauth.OAuthError as e:
+        raise HTTPException(500, str(e))
+
+
+@app.get("/auth/callback")
+def auth_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    error_description: str | None = None,
+):
+    """Instagram redirects here after the user presses Allow (or Cancel)."""
+    if error:
+        log_activity("login", error_description or error, status="failed")
+        return RedirectResponse(f"/?login_error={error_description or error}")
+    if not code:
+        return RedirectResponse("/?login_error=No authorization code was returned")
+    if not oauth.consume_state(state):
+        return RedirectResponse("/?login_error=Login session expired, please try again")
+
+    redirect_uri = _redirect_uri(request)
+    try:
+        short = oauth.exchange_code(code, redirect_uri)
+        long_lived = oauth.exchange_for_long_lived(short["access_token"])
+    except oauth.OAuthError as e:
+        log_activity("login", str(e), status="failed")
+        return RedirectResponse(f"/?login_error={e}")
+
+    token = long_lived["access_token"]
+    expires_in = long_lived.get("expires_in")
+    ig_user_id = str(short.get("user_id") or "")
+    save_account(ig_user_id=ig_user_id, access_token=token, expires_in=expires_in)
+
+    # Now that a token is stored, fill in the username for the header.
+    try:
+        profile = ig.get_profile()
+        save_account(
+            ig_user_id=profile.get("id", ig_user_id),
+            access_token=token,
+            expires_in=expires_in,
+            username=profile.get("username"),
+        )
+        log_activity("login", "connected @" + str(profile.get("username")))
+    except Exception as e:
+        log_activity("login", f"token saved but profile fetch failed: {e}", status="failed")
+
+    return RedirectResponse("/?login=success")
+
+
+@app.post("/api/auth/logout")
+def auth_logout():
+    clear_account()
+    log_activity("logout", "account disconnected")
+    return {"status": "disconnected"}
+
+
+@app.post("/api/auth/refresh")
+def auth_refresh():
+    """Extend the long-lived token by another 60 days."""
+    account = get_account()
+    if not account:
+        raise HTTPException(400, "No account connected")
+    try:
+        data = oauth.refresh_long_lived(account["access_token"])
+    except oauth.OAuthError as e:
+        raise HTTPException(500, str(e))
+    save_account(
+        ig_user_id=account["ig_user_id"],
+        access_token=data["access_token"],
+        expires_in=data.get("expires_in"),
+        username=account.get("username"),
+    )
+    log_activity("token_refresh", "long-lived token extended")
+    return {"status": "refreshed", "expires_in": data.get("expires_in")}
+
+
+# ---------------------------------------------------------------------------
+# Content publishing (instagram_business_content_publish)
+# ---------------------------------------------------------------------------
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png"}
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024
+
+
+@app.post("/api/upload")
+async def api_upload(request: Request, file: UploadFile = File(...)):
+    """Store an image locally and hand back a public URL that Instagram can fetch.
+
+    Instagram downloads the image itself, so this URL must be reachable from the
+    internet - on localhost, paste an already-hosted image URL instead.
+    """
+    ext = ALLOWED_IMAGE_TYPES.get((file.content_type or "").lower())
+    if not ext:
+        raise HTTPException(400, "Only JPEG and PNG images can be published to Instagram")
+    body = await file.read()
+    if len(body) > MAX_UPLOAD_BYTES:
+        raise HTTPException(400, "Image is larger than 8 MB")
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    name = f"{uuid.uuid4().hex}{ext}"
+    with open(os.path.join(UPLOAD_DIR, name), "wb") as f:
+        f.write(body)
+
+    base = PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
+    return {"image_url": f"{base}/uploads/{name}", "filename": name}
+
+
+@app.post("/api/publish")
+def api_publish(payload: dict):
+    """Create a media container, wait for it to finish processing, then publish it."""
+    image_url = (payload.get("image_url") or "").strip()
+    caption = payload.get("caption", "")
+    if not image_url:
+        raise HTTPException(400, "image_url is required")
+    if not image_url.startswith(("http://", "https://")):
+        raise HTTPException(400, "image_url must be a public http(s) URL")
+
+    try:
+        container = ig.create_media_container(image_url=image_url, caption=caption)
+        creation_id = container.get("id")
+        if not creation_id:
+            raise ig.InstagramAPIError("Instagram did not return a media container id")
+
+        # Instagram processes the image asynchronously; wait for FINISHED.
+        for _ in range(15):
+            status = ig.get_container_status(creation_id)
+            code = status.get("status_code")
+            if code == "FINISHED":
+                break
+            if code in ("ERROR", "EXPIRED"):
+                raise ig.InstagramAPIError(
+                    "Instagram could not process this image "
+                    f"({status.get('status', code)})"
+                )
+            time.sleep(2)
+
+        result = ig.publish_media(creation_id)
+        log_activity("publish_post", f"media_id={result.get('id')} caption={caption[:120]}")
+        return {"status": "published", "media_id": result.get("id")}
+    except ig.InstagramAPIError as e:
+        log_activity("publish_post", str(e), status="failed")
+        raise HTTPException(500, str(e))
+
+
+@app.get("/api/publish/limit")
+def api_publish_limit():
+    try:
+        return ig.get_publishing_limit()
+    except ig.InstagramAPIError as e:
+        raise HTTPException(500, str(e))
+
+
+# ---------------------------------------------------------------------------
 # Webhook: this is what makes auto-reply real-time.
 # Point your Meta App's webhook URL to: https://your-domain.com/webhook
 # ---------------------------------------------------------------------------
@@ -257,5 +450,8 @@ async def receive_webhook(request: Request):
 # ---------------------------------------------------------------------------
 # Serve the dashboard frontend
 # ---------------------------------------------------------------------------
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")

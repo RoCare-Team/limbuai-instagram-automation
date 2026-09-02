@@ -176,6 +176,11 @@
           <p>Post-level insights (reach, likes, comments, shares, saved) fetch karne ke liye jo har media card pe dikhte hain.</p>
           <div class="used-by">Dashboard me use: <code>/api/media/:id/insights</code></div>
         </div>
+        <div class="perm-card">
+          <div class="row"><span class="name">instagram_business_content_publish</span><span class="status need">Review chahiye</span></div>
+          <p>Dashboard ke "Create a post" section se seedha Instagram feed pe image + caption publish karne ke liye.</p>
+          <div class="used-by">Dashboard me use: <code>/api/publish</code> <code>/api/publish/limit</code></div>
+        </div>
       </div>
       <div class="warn-box"><b>Note:</b> Purane scope names (<code>instagram_manage_comments</code>, <code>instagram_manage_messages</code> waghera bina <code>business_</code> prefix ke) deprecated ho chuke hain. App Dashboard me sirf naye <code>instagram_business_*</code> scopes select karna — agar purane dikhein to app ko naye Instagram API product pe migrate karna padega.</div>
     </div>
@@ -203,10 +208,11 @@
       <h3>Har permission ki video me kya dikhana hai</h3>
       <p>Meta ka rule simple hai: <b>(a)</b> user app ko permission grant karte hue dikhna chahiye, aur <b>(b)</b> app us permission ko real feature me use karte hue dikhna chahiye.</p>
       <ol class="script-flow">
-        <li><b>Login / permission grant</b><span>Instagram Business Login screen dikhao jaha user "Allow" karta hai — jitne scopes maang rahe ho (comments, messages, insights) sab is ek screen pe dikhte hain, ye ek baar record kar lo aur har video ke start me use kar sakte ho.</span></li>
+        <li><b>Login / permission grant — har video ki shuruaat me</b><span>Dashboard kholo (logged-out state me tumhe "Connect your Instagram business account" screen dikhega) → <b>"Continue with Instagram"</b> button click karo → Instagram ka permission screen aayega jaha saare scopes list honge → <b>"Allow"</b> dabao → wapas dashboard pe aa jaoge with account connected. Ye clip ek baar record karke chaaron videos ke start me laga sakte ho.</span></li>
         <li><b>comments permission → dashboard khol ke ek post click karo</b><span>Comments list dikhao → ek comment pe "Reply" click karke reply bhejo → phir "Hide" ya "Delete" bhi try karo. Ye <code>instagram_business_manage_comments</code> ki video hai.</span></li>
         <li><b>messages permission → auto-reply rule dikhao</b><span>"Direct Messages" tab kholo → ek keyword rule add karo (jaise "price" → "DM us for pricing!") → phir kisi doosre test-account se us keyword wala DM bhejo aur dikhao ki auto-reply aa gaya (activity log me "auto_dm_reply" entry dikhao). Ye <code>instagram_business_manage_messages</code> ki video hai.</span></li>
         <li><b>insights permission → post insights kholo</b><span>Media grid me se koi post click karo → modal me reach/likes/comments/shares/saved ke numbers dikhao. Ye <code>instagram_business_manage_insights</code> ki video hai.</span></li>
+        <li><b>content_publish permission → naya post banao</b><span>"Create a post" section tak scroll karo → image choose karo (ya public image URL paste karo) → caption likho → <b>"Publish to Instagram"</b> dabao → "Published!" message dikhao → phir Instagram app/profile kholo aur dikhao ki post sach me live ho gaya. Ye <code>instagram_business_content_publish</code> ki video hai.</span></li>
       </ol>
       <div class="warn-box"><b>Reminder:</b> Agar app khud-explanatory nahi hai to on-screen text captions/tooltips daal do jisme bata ho "ye button reply bhejta hai" waghera — reviewer ko context chahiye hota hai.</div>
     </div>
@@ -220,7 +226,7 @@
     <div class="panel">
       <ol class="script-flow">
         <li><b>App Dashboard kholo</b><span><a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com/apps</a> → apna app select karo.</span></li>
-        <li><b>App Review → Permissions and Features</b><span>Left sidebar me "App Review" → "Permissions and Features" pe jao. Yaha upar bataye 3 scopes (comments, messages, insights) dhundo — <code>instagram_business_basic</code> auto-approved hota hai isliye list me alag se nahi maangna padta.</span></li>
+        <li><b>App Review → Permissions and Features</b><span>Left sidebar me "App Review" → "Permissions and Features" pe jao. Yaha upar bataye 4 scopes (comments, messages, insights, content_publish) dhundo — <code>instagram_business_basic</code> auto-approved hota hai isliye list me alag se nahi maangna padta.</span></li>
         <li><b>Har permission ke saamne "Request" click karo</b><span>Ek form khulega — "How is this used?" description likhna hoga (har permission ke liye alag, copy-paste mat karna) aur video upload karne ka option milega.</span></li>
         <li><b>Video file upload karo</b><span>MP4 recommended. File size limit App Dashboard me hi dikh jayegi (usually kaafi bada limit hota hai, 1-2GB tak chal jata hai). Upload hone ke baad preview zaroor dekh lena.</span></li>
         <li><b>Business Verification</b><span>Agar app dashboard "Business Verification required" bol raha hai to pehle Meta Business Manager me business verify karna padega — ye alag se ek process hai jisme business documents chahiye hote hain.</span></li>
