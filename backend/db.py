@@ -1,7 +1,7 @@
 import sqlite3
 import time
 from contextlib import contextmanager
-from .config import DB_PATH, IG_ACCESS_TOKEN, IG_USER_ID
+from .config import DB_PATH, IG_ACCESS_TOKEN, IG_USER_ID, TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
 
 
 def init_db():
@@ -96,10 +96,49 @@ def clear_account():
         conn.commit()
 
 
+class _DictCursor:
+    """Wraps a DB-API cursor so fetchone()/fetchall() return plain dicts
+    (row["col"] and dict(row) both work), matching sqlite3.Row's behavior."""
+
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def _columns(self):
+        return [d[0] for d in self._cursor.description] if self._cursor.description else []
+
+    def fetchone(self):
+        row = self._cursor.fetchone()
+        return dict(zip(self._columns(), row)) if row is not None else None
+
+    def fetchall(self):
+        cols = self._columns()
+        return [dict(zip(cols, row)) for row in self._cursor.fetchall()]
+
+
+class _TursoConn:
+    """Thin sqlite3-compatible wrapper around the libsql remote connection."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        return _DictCursor(self._conn.execute(sql, params))
+
+    def commit(self):
+        self._conn.commit()
+
+    def close(self):
+        self._conn.close()
+
+
 @contextmanager
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    if TURSO_DATABASE_URL:
+        import libsql
+        conn = _TursoConn(libsql.connect(database=TURSO_DATABASE_URL, auth_token=TURSO_AUTH_TOKEN))
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
     try:
         yield conn
     finally:

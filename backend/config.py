@@ -35,6 +35,13 @@ IG_REFRESH_URL = "https://graph.instagram.com/refresh_access_token"
 
 DB_PATH = os.getenv("DB_PATH", "ig_dashboard.db")
 
+# Optional: Turso (SQLite-compatible, remote) database. When both are set, the
+# app uses Turso instead of a local SQLite file — needed on serverless hosts
+# like Vercel where the local filesystem doesn't persist between requests.
+# Get these from `turso db show <db-name> --url` and `turso db tokens create <db-name>`.
+TURSO_DATABASE_URL = os.getenv("TURSO_DATABASE_URL", "")
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
+
 # Folder where images uploaded for publishing are stored. Instagram must be able
 # to download the image over a public URL, so these are served at /uploads/<file>.
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
