@@ -33,7 +33,9 @@ IG_TOKEN_URL = "https://api.instagram.com/oauth/access_token"
 IG_LONG_LIVED_URL = "https://graph.instagram.com/access_token"
 IG_REFRESH_URL = "https://graph.instagram.com/refresh_access_token"
 
-DB_PATH = os.getenv("DB_PATH", "ig_dashboard.db")
+# Vercel's filesystem is read-only except /tmp (which is not persistent).
+ON_VERCEL = bool(os.getenv("VERCEL"))
+DB_PATH = os.getenv("DB_PATH", "/tmp/ig_dashboard.db" if ON_VERCEL else "ig_dashboard.db")
 
 # Optional: Turso (SQLite-compatible, remote) database. When both are set, the
 # app uses Turso instead of a local SQLite file — needed on serverless hosts
@@ -44,7 +46,7 @@ TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "")
 
 # Folder where images uploaded for publishing are stored. Instagram must be able
 # to download the image over a public URL, so these are served at /uploads/<file>.
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/tmp/uploads" if ON_VERCEL else "uploads")
 
 # Public base URL of this deployment, used to build the image_url that Instagram
 # fetches when publishing. Falls back to the incoming request's own host.

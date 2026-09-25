@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LimbuAI — API Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#fafafa;--surface:#fff;--surface-2:#f3f4f6;--border:#e5e7eb;--text:#111827;--dim:#6b7280;--accent:#eab308;--accent-soft:#facc15;--blue:#3b82f6;--ok:#10b981;--err:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6}
+  h1,h2,h3{font-family:'Montserrat',sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(250,250,250,.92);backdrop-filter:blur(8px);z-index:10}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text);font-weight:700;font-family:'Montserrat'}
+  .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-soft));display:flex;align-items:center;justify-content:center}
+  .back{font-size:13px;color:var(--dim);text-decoration:none;padding:8px 14px;border:1px solid var(--border);border-radius:8px}
+  main{max-width:960px;margin:0 auto;padding:36px 24px 90px}
+  h1{font-size:30px;font-weight:800;margin-bottom:8px}
+  .lead{color:var(--dim);margin-bottom:28px}
+  h2{font-size:19px;margin:34px 0 12px}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+  code,pre{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+  code{background:var(--surface-2);border:1px solid var(--border);padding:1px 6px;border-radius:5px}
+  pre{background:#111827;color:#e5e7eb;padding:14px 16px;border-radius:10px;overflow-x:auto;margin-top:10px;line-height:1.55}
+  .ep{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+  .m{font-family:'JetBrains Mono';font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff}
+  .GET{background:var(--blue)}.POST{background:var(--ok)}.DELETE{background:var(--err)}
+  .path{font-family:'JetBrains Mono';font-size:13px;font-weight:600}
+  .desc{color:var(--dim);font-size:13.5px;margin-top:6px}
+  .perm{font-size:11px;color:#92400e;background:rgba(250,204,21,.25);padding:2px 8px;border-radius:20px;margin-left:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border)}
+  .note{background:rgba(250,204,21,.14);border:1px solid rgba(234,179,8,.4);border-radius:10px;padding:12px 14px;font-size:13.5px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><div class="mark">L</div>LimbuAI API</a>
+  <a class="back" href="/">← Dashboard</a>
+</header>
+<main>
+  <h1>API Docs</h1>
+  <p class="lead">Ye backend kisi bhi dusre project ke frontend se use kar sakte ho — CORS open hai (<code>*</code>), sab endpoints JSON dete hain. Interactive Swagger UI: <a href="/docs">/docs</a> · OpenAPI schema: <a href="/openapi.json">/openapi.json</a></p>
+
+  <h2>Base URL</h2>
+  <div class="panel">
+    <p>Apne deployed backend ka URL (Vercel URL), jaise <code id="base">https://your-app.vercel.app</code></p>
+    <pre>const BASE = "https://your-app.vercel.app";
+
+async function api(path, options = {}) {
+  const res = await fetch(BASE + path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+  return res.json();
+}
+
+// examples
+const profile  = await api("/api/profile");
+const media    = await api("/api/media?limit=12");
+await api("/api/comments/COMMENT_ID/reply", { method: "POST", body: JSON.stringify({ message: "Thanks!" }) });</pre>
+  </div>
+  <div class="note"><b>Auth:</b> API me alag se API-key nahi hai — backend apne Instagram token (env var ya Login flow se connected account) se kaam karta hai. Ye API sirf apne trusted frontends ke liye use karo; public site pe kholna ho to pehle apna auth layer lagana.</div>
+
+  <h2>Account &amp; Login</h2>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/auth/status</span></div><div class="desc">Connected hai ya nahi, username, token expiry (din), required scopes, redirect URI.</div></div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/auth/login</span></div><div class="desc">Browser ko Instagram ki permission screen pe redirect karta hai. Isko link/button (<code>window.location</code>) se kholo, fetch se nahi.</div></div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/auth/callback</span></div><div class="desc">Instagram yahin wapas bhejta hai (code exchange + 60-day token save). Manually call nahi karna.</div></div>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/auth/refresh</span></div><div class="desc">Long-lived token ko 60 din aur extend karta hai.</div></div>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/auth/logout</span></div><div class="desc">Connected account disconnect.</div></div>
+
+  <h2>Profile, Posts &amp; Insights</h2>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/profile</span><span class="perm">instagram_business_basic</span></div><div class="desc">Returns <code>id, username, account_type, media_count</code>.</div></div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/media?limit=12</span><span class="perm">instagram_business_basic</span></div><div class="desc">Recent posts: <code>id, caption, media_type, media_url, thumbnail_url, permalink, timestamp, like_count, comments_count</code>.</div></div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/media/{media_id}/insights</span><span class="perm">instagram_business_manage_insights</span></div><div class="desc">reach, likes, comments, shares, saved (unsupported types pe sirf reach).</div></div>
+
+  <h2>Comments</h2>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/media/{media_id}/comments</span><span class="perm">instagram_business_manage_comments</span></div><div class="desc">Post ke comments: <code>id, text, username, timestamp, like_count</code>.</div></div>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/comments/{comment_id}/reply</span><span class="perm">instagram_business_manage_comments</span></div><div class="desc">Body: <code>{"message": "text"}</code></div></div>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/comments/{comment_id}/hide</span><span class="perm">instagram_business_manage_comments</span></div><div class="desc">Body: <code>{"hide": true}</code> (false = unhide)</div></div>
+  <div class="panel"><div class="ep"><span class="m DELETE">DELETE</span><span class="path">/api/comments/{comment_id}</span><span class="perm">instagram_business_manage_comments</span></div><div class="desc">Comment permanently delete.</div></div>
+
+  <h2>Auto-reply rules</h2>
+  <div class="panel">
+    <div class="ep"><span class="m GET">GET</span><span class="path">/api/rules/comments</span> <span class="path">/api/rules/dms</span></div>
+    <div class="ep" style="margin-top:8px"><span class="m POST">POST</span><span class="path">/api/rules/comments</span> <span class="path">/api/rules/dms</span></div>
+    <div class="desc">Body: <code>{"keyword":"price","reply_text":"DM us!","match_type":"contains"}</code> — <code>match_type</code>: <code>contains</code> ya <code>exact</code>.</div>
+    <div class="ep" style="margin-top:8px"><span class="m DELETE">DELETE</span><span class="path">/api/rules/comments/{id}</span> <span class="path">/api/rules/dms/{id}</span></div>
+  </div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/activity?limit=50</span></div><div class="desc">Activity log (manual + auto replies, publish, login).</div></div>
+
+  <h2>Publishing</h2>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/publish</span><span class="perm">instagram_business_content_publish</span></div><div class="desc">Body: <code>{"image_url":"https://public-image.jpg","caption":"text"}</code>. Image URL public honi chahiye (JPEG/PNG). Returns <code>{"status":"published","media_id":"..."}</code>.</div></div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/api/publish/limit</span></div><div class="desc">Publishing quota (24h me kitne post ho sakte hain).</div></div>
+  <div class="panel"><div class="ep"><span class="m POST">POST</span><span class="path">/api/upload</span></div><div class="desc">multipart <code>file</code> (JPEG/PNG, max 8 MB) → <code>{"image_url": ...}</code>. <b>Vercel pe kaam nahi karega</b> (filesystem persist nahi hota) — wahan pehle se hosted image URL hi <code>/api/publish</code> me do.</div></div>
+
+  <h2>Webhook (Meta ke liye)</h2>
+  <div class="panel">
+    <div class="ep"><span class="m GET">GET</span><span class="m POST">POST</span><span class="path">/webhook</span></div>
+    <div class="desc">Meta App Dashboard → Webhooks me Callback URL: <code>https://your-app.vercel.app/webhook</code>, Verify token: <code>VERIFY_TOKEN</code> env var. Subscribe: <code>comments</code>, <code>messages</code>. Signature <code>APP_SECRET</code> se verify hoti hai.</div>
+  </div>
+  <div class="panel"><div class="ep"><span class="m GET">GET</span><span class="path">/healthz</span></div><div class="desc">Health check → <code>{"status":"ok"}</code></div></div>
+</main>
+<script>document.getElementById("base").textContent = location.origin;</script>
+</body>
+</html>

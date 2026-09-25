@@ -9,6 +9,8 @@ Three hops:
 
 This is the flow Meta's reviewers must see at the start of every screencast.
 """
+import hashlib
+import hmac
 import secrets
 import time
 
@@ -25,8 +27,8 @@ from .config import (
     REQUIRED_SCOPES,
 )
 
-# Short-lived CSRF states issued by /auth/login and consumed by /auth/callback.
-_pending_states: dict[str, float] = {}
+# CSRF state is a signed, timestamped token (stateless) so it survives serverless
+# hosts where /auth/login and /auth/callback may hit different instances.
 _STATE_TTL = 600  # seconds
 
 
@@ -38,21 +40,26 @@ def is_configured() -> bool:
     return bool(IG_APP_ID and IG_APP_SECRET)
 
 
+def _sign(payload: str) -> str:
+    return hmac.new(IG_APP_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+
+
 def _new_state() -> str:
-    now = time.time()
-    for old, issued in list(_pending_states.items()):
-        if now - issued > _STATE_TTL:
-            _pending_states.pop(old, None)
-    state = secrets.token_urlsafe(24)
-    _pending_states[state] = now
-    return state
+    payload = f"{int(time.time())}.{secrets.token_urlsafe(12)}"
+    return f"{payload}.{_sign(payload)}"
 
 
 def consume_state(state: str | None) -> bool:
-    if not state:
+    if not state or not IG_APP_SECRET:
         return False
-    issued = _pending_states.pop(state, None)
-    return issued is not None and (time.time() - issued) <= _STATE_TTL
+    payload, _, sig = state.rpartition(".")
+    if not payload or not hmac.compare_digest(sig, _sign(payload)):
+        return False
+    try:
+        issued = int(payload.split(".", 1)[0])
+    except ValueError:
+        return False
+    return 0 <= time.time() - issued <= _STATE_TTL
 
 
 def build_authorize_url(redirect_uri: str | None = None) -> str:
